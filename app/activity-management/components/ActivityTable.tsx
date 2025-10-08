@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TableRow } from '../types';
-import { STATUS_BADGES, PAGE_SIZE_OPTIONS } from '../constants';
+import { STATUS_BADGES, PAGE_SIZE_OPTIONS, getLanguageLabel, getTemplateLabel, getMerchantLabel } from '../constants';
 
 interface ActivityTableProps {
   data: TableRow[];
@@ -21,6 +21,7 @@ interface ActivityTableProps {
   totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  onEditClick: (row: TableRow) => void;
 }
 
 export default function ActivityTable({
@@ -29,7 +30,8 @@ export default function ActivityTable({
   pageSize,
   totalItems,
   onPageChange,
-  onPageSizeChange
+  onPageSizeChange,
+  onEditClick
 }: ActivityTableProps) {
   const totalPages = Math.ceil(totalItems / pageSize);
 
@@ -67,17 +69,17 @@ export default function ActivityTable({
             {data.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50 transition-colors bg-white">
                 <td className="px-4 py-3 text-sm text-gray-900">{row.id}</td>
-                <td className="px-4 py-3 text-sm text-gray-900">{row.language}</td>
-                <td className="px-4 py-3 text-sm text-gray-900">{row.template}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{getLanguageLabel(row.language)}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{getTemplateLabel(row.template)}</td>
                 <td className="px-4 py-3 text-sm text-gray-900 max-w-[200px] truncate" title={row.title}>
                   {row.title}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded"></div>
+                  <div className="w-24 aspect-video bg-gray-300 rounded"></div>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-900">{row.views}</td>
                 <td className="px-4 py-3 text-sm text-gray-900">{row.sort}</td>
-                <td className="px-4 py-3 text-sm text-gray-900">{row.merchant}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{getMerchantLabel(row.merchant)}</td>
                 <td className="px-4 py-3 text-sm whitespace-nowrap">
                   {row.scheduledTime ? (
                     <div className="flex items-center gap-1 text-gray-600">
@@ -114,8 +116,13 @@ export default function ActivityTable({
                         上架
                       </Button>
                     )}
-                    <Button variant="link" size="sm" className="h-auto p-0">
-                      查看
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0"
+                      onClick={() => onEditClick(row)}
+                    >
+                      编辑
                     </Button>
                     {row.status === 'failed' && (
                       <Button variant="link" size="sm" className="h-auto p-0">
@@ -125,8 +132,7 @@ export default function ActivityTable({
                     <Button
                       variant="link"
                       size="sm"
-                      className={`h-auto p-0 ${row.status === 'published' || row.status === 'pending' ? 'text-muted-foreground cursor-not-allowed' : 'text-destructive hover:text-destructive/80'}`}
-                      disabled={row.status === 'published' || row.status === 'pending'}
+                      className="h-auto p-0 text-destructive hover:text-destructive/80"
                     >
                       删除
                     </Button>

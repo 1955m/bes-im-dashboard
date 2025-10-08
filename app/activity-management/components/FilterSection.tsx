@@ -77,7 +77,8 @@ export default function FilterSection({
         <div className="flex gap-2">
           <Button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            variant={showAdvancedFilters || getActiveFiltersCount() > 0 ? "secondary" : "outline"}
+            variant="outline"
+            className={showAdvancedFilters || getActiveFiltersCount() > 0 ? "bg-secondary" : ""}
           >
             <Filter className="w-4 h-4" />
             <span className="hidden sm:inline">筛选</span>
@@ -140,7 +141,7 @@ export default function FilterSection({
                 value={filters.language}
                 onValueChange={(val) => setFilters({ ...filters, language: val })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="全部语言" />
                 </SelectTrigger>
                 <SelectContent>
@@ -159,7 +160,7 @@ export default function FilterSection({
                 value={filters.template}
                 onValueChange={(val) => setFilters({ ...filters, template: val })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="全部模板" />
                 </SelectTrigger>
                 <SelectContent>
@@ -178,7 +179,7 @@ export default function FilterSection({
                 value={filters.status}
                 onValueChange={(val) => setFilters({ ...filters, status: val })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="全部状态" />
                 </SelectTrigger>
                 <SelectContent>
@@ -197,7 +198,7 @@ export default function FilterSection({
                 value={filters.merchant}
                 onValueChange={(val) => setFilters({ ...filters, merchant: val })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="全部商户" />
                 </SelectTrigger>
                 <SelectContent>
@@ -216,7 +217,7 @@ export default function FilterSection({
                 value={filters.isScheduled}
                 onValueChange={(val) => setFilters({ ...filters, isScheduled: val })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="全部类型" />
                 </SelectTrigger>
                 <SelectContent>

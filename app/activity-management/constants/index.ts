@@ -44,13 +44,18 @@ export const PAGE_SIZE_OPTIONS: SelectOption[] = [
 export const FILTER_LANGUAGE_OPTIONS: SelectOption[] = [
   { value: '', label: '全部语言' },
   { value: 'zh-cn', label: '简体中文' },
-  { value: 'en', label: 'English' }
+  { value: 'zh-hant-cn', label: '繁体中文' },
+  { value: 'us', label: 'English' },
+  { value: 'vi', label: '越南语' },
+  { value: 'th', label: '泰语' },
+  { value: 'id', label: '印尼语' },
+  { value: 'pt-br', label: '巴西语' }
 ];
 
 export const FILTER_TEMPLATE_OPTIONS: SelectOption[] = [
   { value: '', label: '全部模板' },
   { value: 'activity', label: '活动中心' },
-  { value: 'exchange', label: '交易汇率' }
+  { value: 'exchange_rate', label: '交易汇率' }
 ];
 
 export const FILTER_STATUS_OPTIONS: SelectOption[] = [
@@ -82,8 +87,16 @@ export const STATUS_BADGES = {
 };
 
 export const FILTER_LABELS: Record<string, Record<string, string>> = {
-  language: { 'zh-cn': '简体中文', 'en': 'English' },
-  template: { 'activity': '活动中心', 'exchange': '交易汇率' },
+  language: {
+    'zh-cn': '简体中文',
+    'zh-hant-cn': '繁体中文',
+    'us': 'English',
+    'vi': '越南语',
+    'th': '泰语',
+    'id': '印尼语',
+    'pt-br': '巴西语'
+  },
+  template: { 'activity': '活动中心', 'exchange_rate': '交易汇率' },
   status: {
     'published': '已发布',
     'pending': '待发布',
@@ -116,4 +129,20 @@ export const DEFAULT_FORM_DATA = {
   customRepeatType: 'days',
   customRepeatValue: 1,
   customRepeatWeekdays: [] as number[]
+};
+
+// Helper functions to map codes to display labels
+export const getLanguageLabel = (code: string): string => {
+  const option = LANGUAGE_OPTIONS.find(opt => opt.value === code);
+  return option ? option.label : code;
+};
+
+export const getTemplateLabel = (code: string): string => {
+  const option = TEMPLATE_OPTIONS.find(opt => opt.value === code);
+  return option ? option.label : code;
+};
+
+export const getMerchantLabel = (code: string): string => {
+  const option = MERCHANT_OPTIONS.find(opt => opt.value === code);
+  return option ? option.label : code;
 };

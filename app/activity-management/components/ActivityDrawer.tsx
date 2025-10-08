@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { Plus, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Link, Image, Video, Calendar as CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   Sheet,
   SheetContent,
@@ -75,13 +76,15 @@ interface ActivityDrawerProps {
   onClose: () => void;
   formData: FormData;
   setFormData: (data: FormData) => void;
+  editingId?: number | null;
 }
 
 export default function ActivityDrawer({
   isOpen,
   onClose,
   formData,
-  setFormData
+  setFormData,
+  editingId = null
 }: ActivityDrawerProps) {
   const [showTemplateConfirm, setShowTemplateConfirm] = useState(false);
   const [pendingTemplateChange, setPendingTemplateChange] = useState('');
@@ -92,6 +95,13 @@ export default function ActivityDrawer({
     defaultValues: formData,
     mode: 'onChange',
   });
+
+  // Reset form with formData when drawer opens or formData changes
+  useEffect(() => {
+    if (isOpen) {
+      form.reset(formData);
+    }
+  }, [isOpen, formData, form]);
 
   // Watch form values for preview
   const watchedValues = form.watch();
@@ -140,17 +150,44 @@ export default function ActivityDrawer({
       <Sheet open={isOpen} onOpenChange={handleClose}>
         <SheetContent className="w-full sm:max-w-[95vw] lg:max-w-[1400px] p-0 overflow-hidden">
           <SheetHeader className="px-6 py-4 border-b">
-            <SheetTitle>增加</SheetTitle>
+            <SheetTitle>{editingId ? '编辑' : '增加'}</SheetTitle>
           </SheetHeader>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="h-[calc(100vh-120px)]">
               {/* Split Panel Layout */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-full">
-                {/* Left Panel: Form Fields (Scrollable) */}
-                <div className="overflow-y-auto px-6 pt-6 space-y-6 border-r">
-              {/* Template Configuration */}
-              <div className="space-y-4">
+                {/* Left Panel: Live Preview (Sticky) */}
+                <div className="overflow-y-auto bg-muted/30 px-6 py-6 border-r">
+                  <div className="sticky top-0 space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-semibold">模板预览</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewMode(previewMode === 'light' ? 'dark' : 'light')}
+                      >
+                        {previewMode === 'light' ? '浅色' : '深色'}
+                      </Button>
+                    </div>
+
+                    <TemplatePreview
+                      formData={watchedValues as FormData}
+                      previewMode={previewMode}
+                      onToggleMode={() => setPreviewMode(previewMode === 'light' ? 'dark' : 'light')}
+                    />
+
+                    <p className="text-sm text-muted-foreground mt-4">
+                      此预览仅供参考，实际显示可能会有所不同
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Panel: Form Fields (Scrollable) */}
+                <div className="overflow-y-auto px-6 pt-6 space-y-6">
+                  {/* Template Configuration */}
+                  <div className="space-y-4">
                 <h3 className="text-base font-medium">模板配置</h3>
                 <FormField
                   control={form.control}
@@ -182,115 +219,66 @@ export default function ActivityDrawer({
                     </FormItem>
                   )}
                 />
-              </div>
-
-              {/* Media Settings (for activity template) */}
-              {watchedValues.templateType === 'activity' && (
-                <div className="space-y-4">
-                  <h3 className="text-base font-medium">媒体设置</h3>
-
-                  <FormField
-                    control={form.control}
-                    name="mediaType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          缩略图 <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            className="flex gap-4"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="1" id="media-image" />
-                              <Label htmlFor="media-image">图片类型</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="2" id="media-video" />
-                              <Label htmlFor="media-video">视频类型</Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormDescription>选择上传图片或视频作为活动缩略图</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="space-y-2">
-                    <Label htmlFor="file-upload" className="text-sm font-normal">上传文件</Label>
-                    <div className="border-2 border-dashed border-input rounded-lg p-8 text-center hover:border-border transition-colors cursor-pointer">
-                      <Plus className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-                      <input
-                        id="file-upload"
-                        type="file"
-                        accept="image/*,video/*"
-                        multiple
-                        className="hidden"
-                      />
-                      <p className="text-sm text-muted-foreground">点击上传或拖拽文件到此处</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">注：建议上传16:9图片，图片质量控制在5M以下，最多9张</p>
                   </div>
 
-                  <div className="grid grid-cols-[140px_1fr] gap-2">
-                    <FormField
-                      control={form.control}
-                      name="linkName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>按钮名称</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              maxLength={10}
-                              placeholder="请输入按钮名称"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="linkUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>第三方链接</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="请输入第三方活动链接"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">可选：添加外部活动链接按钮（最多10个字符）</p>
+                  {/* Media Settings */}
+                  <div className="space-y-4">
+                <h3 className="text-base font-medium">媒体设置</h3>
 
-                  <FormField
-                    control={form.control}
-                    name="initialViews"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>初始浏览量</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="text" />
-                        </FormControl>
-                        <FormDescription>设置活动显示的初始浏览次数</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="mediaType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        缩略图 <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex gap-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="1" id="media-image" />
+                            <Label htmlFor="media-image">图片类型</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="2" id="media-video" />
+                            <Label htmlFor="media-video">视频类型</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormDescription>选择上传图片或视频作为缩略图</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="file-upload" className="text-sm font-normal">上传文件</Label>
+                  <div className="border-2 border-dashed border-input rounded-lg p-8 text-center hover:border-border transition-colors cursor-pointer">
+                    <Plus className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      className="hidden"
+                    />
+                    <p className="text-sm text-muted-foreground">点击上传或拖拽文件到此处</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {watchedValues.mediaType === '2'
+                      ? '注：建议上传16:9视频，视频质量控制50M以下，仅支持上传MP4格式'
+                      : '注：建议上传16:9图片，图片质量控制在5M以下，最多9张'
+                    }
+                  </p>
                 </div>
-              )}
+                  </div>
 
-              {/* Content Settings */}
-              <div className="space-y-4">
+                  {/* Content Settings */}
+                  <div className="space-y-4">
                 <h3 className="text-base font-medium">内容设置</h3>
 
                 <FormField
@@ -474,10 +462,62 @@ export default function ActivityDrawer({
                     </FormItem>
                   )}
                 />
-              </div>
 
-              {/* Publishing Settings */}
-              <div className="space-y-4 border-t pt-6">
+                <div className="grid grid-cols-[140px_1fr] gap-2">
+                  <FormField
+                    control={form.control}
+                    name="linkName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>按钮名称</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            maxLength={10}
+                            placeholder="请输入按钮名称"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="linkUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>第三方链接</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="请输入第三方活动链接"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">可选：添加外部活动链接按钮（最多10个字符）</p>
+
+                <FormField
+                  control={form.control}
+                  name="initialViews"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>初始浏览量</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="text" />
+                      </FormControl>
+                      <FormDescription>设置活动显示的初始浏览次数</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                  </div>
+
+                  {/* Publishing Settings */}
+                  <div className="space-y-4 border-t pt-6">
                 <h3 className="text-base font-medium">发布设置</h3>
 
                 <FormField
@@ -501,8 +541,10 @@ export default function ActivityDrawer({
                   )}
                 />
 
-                {watchedValues.scheduledPublish && (
-                  <div className="pl-6 border-l-2 border-border space-y-4">
+                <div className={cn(
+                  "pl-6 border-l-2 border-border space-y-4",
+                  !watchedValues.scheduledPublish && "opacity-50 pointer-events-none"
+                )}>
                     <FormField
                       control={form.control}
                       name="publishTime"
@@ -569,8 +611,10 @@ export default function ActivityDrawer({
                       )}
                     />
 
-                    {watchedValues.repeatRule === 'custom' && (
-                      <div className="bg-muted p-4 rounded-md space-y-4">
+                    <div className={cn(
+                      "bg-muted p-4 rounded-md space-y-4",
+                      watchedValues.repeatRule !== 'custom' && "opacity-50 pointer-events-none"
+                    )}>
                         <h4 className="text-sm font-medium">自定义重复规则</h4>
 
                         <FormField
@@ -598,34 +642,31 @@ export default function ActivityDrawer({
                           )}
                         />
 
-                        {watchedValues.customRepeatType === 'days' && (
-                          <FormField
-                            control={form.control}
-                            name="customRepeatValue"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>间隔天数</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    type="number"
-                                    min="1"
-                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
+                        <FormField
+                          control={form.control}
+                          name="customRepeatValue"
+                          render={({ field }) => (
+                            <FormItem className={cn(watchedValues.customRepeatType !== 'days' && "hidden")}>
+                              <FormLabel>间隔天数</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  min="1"
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                        {watchedValues.customRepeatType === 'weekdays' && (
-                          <FormField
-                            control={form.control}
-                            name="customRepeatWeekdays"
-                            render={() => (
-                              <FormItem>
-                                <FormLabel>选择星期</FormLabel>
+                        <FormField
+                          control={form.control}
+                          name="customRepeatWeekdays"
+                          render={() => (
+                            <FormItem className={cn(watchedValues.customRepeatType !== 'weekdays' && "hidden")}>
+                              <FormLabel>选择星期</FormLabel>
                                 <div className="grid grid-cols-4 gap-2">
                                   {WEEKDAYS.map((day, index) => (
                                     <FormField
@@ -662,36 +703,40 @@ export default function ActivityDrawer({
                                   ))}
                                 </div>
                                 <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
-                      </div>
-                    )}
+                            </FormItem>
+                          )}
+                        />
+                    </div>
 
-                    {watchedValues.publishTime && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <div className={cn(
+                      "bg-blue-50 border border-blue-200 rounded-md p-3",
+                      !watchedValues.publishTime && "opacity-50"
+                    )}>
                         <div className="flex items-start gap-2">
                           <CalendarIcon className="w-4 h-4 text-blue-600 mt-0.5" />
                           <div className="text-sm text-blue-800">
                             <div className="font-medium">发布计划</div>
                             <div className="mt-1">
-                              首次发布：{watchedValues.publishTime}
-                              {watchedValues.repeatRule === 'daily' && '，之后每日重复'}
-                              {watchedValues.repeatRule === 'weekly' && '，之后每周重复'}
-                              {watchedValues.repeatRule === 'custom' && watchedValues.customRepeatType === 'days' && `，之后每${watchedValues.customRepeatValue}天重复`}
-                              {watchedValues.repeatRule === 'custom' && watchedValues.customRepeatType === 'weekdays' && watchedValues.customRepeatWeekdays && watchedValues.customRepeatWeekdays.length > 0 && `，之后每周${watchedValues.customRepeatWeekdays.map(d => WEEKDAYS_SHORT[d - 1]).join('、')}重复`}
+                              {watchedValues.publishTime ? (
+                                <>
+                                  首次发布：{watchedValues.publishTime}
+                                  {watchedValues.repeatRule === 'daily' && '，之后每日重复'}
+                                  {watchedValues.repeatRule === 'weekly' && '，之后每周重复'}
+                                  {watchedValues.repeatRule === 'custom' && watchedValues.customRepeatType === 'days' && `，之后每${watchedValues.customRepeatValue}天重复`}
+                                  {watchedValues.repeatRule === 'custom' && watchedValues.customRepeatType === 'weekdays' && watchedValues.customRepeatWeekdays && watchedValues.customRepeatWeekdays.length > 0 && `，之后每周${watchedValues.customRepeatWeekdays.map(d => WEEKDAYS_SHORT[d - 1]).join('、')}重复`}
+                                </>
+                              ) : (
+                                '请先选择发布时间以查看计划详情'
+                              )}
                             </div>
                           </div>
                         </div>
                       </div>
-                    )}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Basic Configuration */}
-              <div className="space-y-4">
+                  {/* Basic Configuration */}
+                  <div className="space-y-4">
                 <h3 className="text-base font-medium">基本配置</h3>
 
                 <FormField
@@ -761,9 +806,9 @@ export default function ActivityDrawer({
                     </FormItem>
                   )}
                 />
-              </div>
+                  </div>
 
-                  {/* Footer inside left panel */}
+                  {/* Footer Actions */}
                   <div className="sticky bottom-0 bg-background pt-4 pb-4 border-t mt-6 flex justify-end gap-3">
                     <Button type="button" variant="outline" onClick={handleClose}>
                       返回
@@ -771,33 +816,6 @@ export default function ActivityDrawer({
                     <Button type="submit">
                       保存
                     </Button>
-                  </div>
-                </div>
-
-                {/* Right Panel: Live Preview (Sticky) */}
-                <div className="overflow-y-auto bg-muted/30 px-6 py-6">
-                  <div className="sticky top-0 space-y-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-base font-semibold">模板预览</h3>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPreviewMode(previewMode === 'light' ? 'dark' : 'light')}
-                      >
-                        {previewMode === 'light' ? '浅色' : '深色'}
-                      </Button>
-                    </div>
-
-                    <TemplatePreview
-                      formData={watchedValues as FormData}
-                      previewMode={previewMode}
-                      onToggleMode={() => setPreviewMode(previewMode === 'light' ? 'dark' : 'light')}
-                    />
-
-                    <p className="text-sm text-muted-foreground mt-4">
-                      此预览仅供参考，实际显示可能会有所不同
-                    </p>
                   </div>
                 </div>
               </div>
